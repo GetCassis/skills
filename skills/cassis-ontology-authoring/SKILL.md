@@ -13,7 +13,7 @@ argument-hint: "[path to the ontology repo, defaults to current directory]"
 
 # Cassis ontology authoring
 
-This skill extends an **existing** Cassis ontology in a git repo. It is not for initial project setup (see [docs.getcassis.com/setup](https://docs.getcassis.com/)). The human companion guide, with the same playbooks as copy-paste prompts for agents that can't install skills, sits next to this file as [GUIDE.md](https://github.com/GetCassis/skills/blob/main/skills/cassis-ontology-authoring/GUIDE.md).
+This skill extends an **existing** Cassis ontology in a git repo. It is not for initial project setup (see [docs.getcassis.com/setup](https://docs.getcassis.com/)). The human companion guide, with the same playbooks as copy-paste prompts for agents that can't install skills, is the [README in this skill's directory](https://github.com/GetCassis/skills/tree/main/skills/cassis-ontology-authoring).
 
 ## Doctrine order
 

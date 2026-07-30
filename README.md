@@ -6,7 +6,7 @@ Agent skills for working with [Cassis](https://getcassis.com), the living contex
 
 | Skill | What it does |
 |---|---|
-| [`cassis-ontology-authoring`](skills/cassis-ontology-authoring/) | Extends an existing Cassis ontology in a git repository. Hand it a schema dump, dbt YAML, query history or an internal doc, and it writes the ontology files, validates them with `cassis-cli`, reviews the open questions with you, and opens the pull request. Comes with a [guide for humans](skills/cassis-ontology-authoring/GUIDE.md) carrying the same playbooks as copy-paste prompts, for agents that can't install skills. |
+| [`cassis-ontology-authoring`](skills/cassis-ontology-authoring/) | Extends an existing Cassis ontology in a git repository. Hand it a schema dump, dbt YAML, query history or an internal doc, and it writes the ontology files, validates them with `cassis-cli`, reviews the open questions with you, and opens the pull request. Comes with a [guide for humans](skills/cassis-ontology-authoring/README.md) carrying the same playbooks as copy-paste prompts, for agents that can't install skills. |
 | [`cassis-snowflake-mcp`](skills/cassis-snowflake-mcp/) | Runs Cassis and a Snowflake MCP together when Cassis isn't natively connected to your warehouse. Cassis grounds the question against your ontology and returns SQL, Snowflake executes it. |
 
 ## Install
@@ -26,7 +26,7 @@ git clone https://github.com/GetCassis/skills.git /tmp/cassis-skills
 cp -r /tmp/cassis-skills/skills/cassis-ontology-authoring ~/.claude/skills/
 ```
 
-For clients without native skill loading (Dust, claude.ai, a custom agent), paste the contents of the skill's `SKILL.md` into your custom instructions or system prompt. The ontology authoring skill also ships its playbooks as standalone prompts in [`GUIDE.md`](skills/cassis-ontology-authoring/GUIDE.md).
+For clients without native skill loading (Dust, claude.ai, a custom agent), paste the contents of the skill's `SKILL.md` into your custom instructions or system prompt. The ontology authoring skill also ships its playbooks as standalone prompts in [its README](skills/cassis-ontology-authoring/README.md).
 
 ## Elsewhere
 
