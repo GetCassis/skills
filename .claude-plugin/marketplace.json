@@ -1,0 +1,31 @@
+{
+  "name": "cassis",
+  "owner": {
+    "name": "Cassis",
+    "email": "matthieu.blandineau@getcassis.com"
+  },
+  "metadata": {
+    "description": "Agent skills for working with Cassis, the living context layer for analytics agents",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "cassis-ontology-authoring",
+      "description": "Extend and enrich a Cassis ontology that lives in a git repository. Turns schema dumps, dbt YAML, query history and internal docs into validated ontology files, delivered as a pull request.",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/cassis-ontology-authoring"
+      ]
+    },
+    {
+      "name": "cassis-snowflake-mcp",
+      "description": "Ask plain-language data questions with Cassis and Snowflake together when Cassis is not natively connected to the warehouse. Cassis grounds the question and returns SQL, Snowflake executes it.",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/cassis-snowflake-mcp"
+      ]
+    }
+  ]
+}
