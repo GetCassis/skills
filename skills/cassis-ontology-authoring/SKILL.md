@@ -128,8 +128,10 @@ Show the user the question and the outcome, in the final summary as well as inli
 Whenever the user (or an expert they consulted) confirms an answer or a definition, propose locking it in:
 
 ```bash
-cassis eval add-case   # gold question + SQL
+cassis eval add-case -q "<the confirmed question>" --gold-sql "<the correct SQL>"
 ```
+
+Both flags are required; there is no interactive prompt.
 
 Before opening the PR, if the project has an eval suite:
 

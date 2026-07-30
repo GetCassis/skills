@@ -21,7 +21,7 @@ flowchart LR
     wh[("Warehouse<br/>or schema dumps")]
     users["Data consumers' agents<br/>MCP, Slack, app"]
 
-    agent -->|"writes YAML, guided by AGENTS.md"| repo
+    agent -->|"writes Markdown + YAML, guided by AGENTS.md"| repo
     cli -->|"validates and tests locally"| repo
     repo -->|"merge to default branch = publish"| cassis
     cli <-->|"pull / upload"| cassis
@@ -30,7 +30,7 @@ flowchart LR
     users -->|"use and corrections feed issues"| cassis
 ```
 
-Everything on the left is yours: the YAML in your repo is the source of truth, your agent writes it, the CLI checks it without touching production. Nothing reaches your data consumers until a merge to the default branch publishes a new version. Real use then flows back as issues, which is where the maintenance loop (end of this guide) picks up.
+Everything on the left is yours: the files in your repo are the source of truth, your agent writes them, the CLI checks them without touching production. Nothing reaches your data consumers until a merge to the default branch publishes a new version. Real use then flows back as issues, which is where the maintenance loop (end of this guide) picks up.
 
 ## What the ontology is made of
 
@@ -43,7 +43,7 @@ Everything on the left is yours: the YAML in your repo is the source of truth, y
 | `cassis/metrics/<name>.yml` | One metric: definition, SQL, grain |
 | `cassis/joins.yml` | All join paths, centralized |
 
-Domains are Markdown documents in [OKF (Open Knowledge Format)](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf), so they render natively when you browse the repo. Tables, joins, and metrics stay YAML: they're data, not documents. Full field-by-field reference: [file format](https://docs.getcassis.com/file-format/). For a complete example of what "done" looks like, read the [Stallora ontology](https://github.com/GetCassis/cassis-ontology-examples/tree/main/examples/stallora/cassis): note how the domain READMEs route the agent between tables, and how deep rules live in topic subdomains like `marketplace/measuring-sales`.
+Domains are Markdown documents in a Cassis profile inspired by [OKF (Open Knowledge Format)](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf), so they render natively when you browse the repo. Tables, joins, and metrics stay YAML: they're data, not documents. Full field-by-field reference: [file format](https://docs.getcassis.com/file-format/). For a complete example of what "done" looks like, read the [Stallora ontology](https://github.com/GetCassis/cassis-ontology-examples/tree/main/examples/stallora/cassis): note how the domain READMEs route the agent between tables, and how deep rules live in topic subdomains like `marketplace/measuring-sales`.
 
 ## Before you start
 
@@ -95,12 +95,12 @@ cassis ontology test -q "a question this new context should now answer"
 7. When an expert confirms an answer or a definition, lock it in:
 
 ```bash
-cassis eval add-case   # gold question + SQL
+cassis eval add-case -q "the confirmed question" --gold-sql "the correct SQL"
 cassis eval run        # protect against regressions from now on
 ```
 
 8. Review the flagged unknowns with your agent before shipping. Anything you can answer on the spot gets folded into the ontology as one more batch; the rest travels in the PR body for later.
-9. Open a PR. The `cassis / ontology validation` check runs automatically; a human reviews; merging to the default branch publishes the new version.
+9. Open a PR. On a GitHub-synced project, Cassis posts the `cassis / ontology validation` check on it automatically; on GitLab or Bitbucket, a `cassis ontology check` job in your own pipeline is the equivalent gate. A human reviews, and merging to the default branch publishes the new version.
 
 ### Prompt 1: add a schema
 
@@ -126,7 +126,7 @@ Some domains carry hundreds of tables and messy, overlapping concepts. What work
 
 ## Once it's live: maintenance
 
-Real use starts feeding back. Cassis detects recurring problems from conversations and failing evals; your agent reads the queue over MCP (`list_issues`, `get_issue`, `get_issue_evidence`), fixes the YAML on a branch, and opens a PR. Your review stays the gate. Full loop: [work with agents](https://docs.getcassis.com/agents/). Connected warehouses also get schema drift flagged for review before it reaches an answer.
+Real use starts feeding back. Cassis detects recurring problems from conversations and failing evals; your agent reads the queue over MCP (`list_issues`, `get_issue`, `get_issue_evidence`), fixes the files on a branch, and opens a PR. Your review stays the gate. Full loop: [work with agents](https://docs.getcassis.com/agents/). Connected warehouses also get schema drift flagged for review before it reaches an answer.
 
 ## Getting help
 
