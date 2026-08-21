@@ -4,8 +4,8 @@ This guide is for teams with a live Cassis project who want to extend coverage t
 
 You will use three tools together:
 
-- **Your git repository**, where the ontology lives as Markdown domain docs plus YAML data files (see [Ontology in git](https://docs.getcassis.com/git/))
-- **cassis-cli**, to validate, test, and publish (see [CLI reference](https://docs.getcassis.com/cli/))
+- **Your git repository**, where the ontology lives as Markdown domain docs plus YAML data files (see [Ontology in Git](https://docs.getcassis.com/build/git-workflow/))
+- **cassis-cli**, to validate, test, and publish (see [CLI reference](https://docs.getcassis.com/reference/cli/))
 - **A coding agent**, guided by `cassis/AGENTS.md` and the prompts below
 
 If your agent is Claude Code, skip the copy-paste prompts: install the [`cassis-ontology-authoring` skill](https://github.com/GetCassis/skills) (`/plugin marketplace add GetCassis/skills`, then `/plugin install cassis-ontology-authoring@cassis`) and it runs this whole workflow, preflight checks and validation included. The prompts below are for agents that can't install skills (Dust, Cursor, claude.ai).
@@ -43,11 +43,11 @@ Everything on the left is yours: the files in your repo are the source of truth,
 | `cassis/metrics/<name>.yml` | One metric: definition, SQL, grain |
 | `cassis/joins.yml` | All join paths, centralized |
 
-Domains are Markdown documents in a Cassis profile inspired by [OKF (Open Knowledge Format)](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf), so they render natively when you browse the repo. Tables, joins, and metrics stay YAML: they're data, not documents. Full field-by-field reference: [file format](https://docs.getcassis.com/file-format/). For a complete example of what "done" looks like, read the [Stallora ontology](https://github.com/GetCassis/cassis-ontology-examples/tree/main/examples/stallora/cassis): note how the domain READMEs route the agent between tables, and how deep rules live in topic subdomains like `marketplace/measuring-sales`.
+Domains are Markdown documents in a Cassis profile inspired by [OKF (Open Knowledge Format)](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf), so they render natively when you browse the repo. Tables, joins, and metrics stay YAML: they're data, not documents. Full field-by-field reference: [ontology schema](https://docs.getcassis.com/reference/schema/). For a complete example of what "done" looks like, read the [Stallora ontology](https://github.com/GetCassis/cassis-ontology-examples/tree/main/examples/stallora/cassis): note how the domain READMEs route the agent between tables, and how deep rules live in topic subdomains like `marketplace/measuring-sales`.
 
 ## Before you start
 
-1. **Set up the repo.** Connect git sync ([how](https://docs.getcassis.com/git/)), or work CLI-only while iterating and wire up sync later.
+1. **Set up the repo.** Connect Git ([how](https://docs.getcassis.com/build/git-connect/)), or work CLI-only while iterating and wire up sync later.
 2. **Install the CLI.** Python 3.10+, then `pip install -U cassis-cli` (1.1.0 or newer; older versions predate the Markdown domain format and are rejected on upload). Create an API key under Organization settings and export it as `CASSIS_API_KEY`. The project id is read from `cassis/project.yml`; set `CASSIS_PROJECT_ID` only to override it.
 3. **Pull and format.**
 
@@ -126,7 +126,7 @@ Some domains carry hundreds of tables and messy, overlapping concepts. What work
 
 ## Once it's live: maintenance
 
-Real use starts feeding back. Cassis detects recurring problems from conversations and failing evals; your agent reads the queue over MCP (`list_issues`, `get_issue`, `get_issue_evidence`), fixes the files on a branch, and opens a PR. Your review stays the gate. Full loop: [work with agents](https://docs.getcassis.com/agents/). Connected warehouses also get schema drift flagged for review before it reaches an answer.
+Real use starts feeding back. Cassis detects recurring problems from conversations and failing evals; your agent reads the queue over MCP (`list_issues`, `get_issue`, `get_issue_evidence`), fixes the files on a branch, and opens a PR. Your review stays the gate. Full loop: [curate with an agent](https://docs.getcassis.com/curate/agent/). Connected warehouses also get schema drift flagged for review before it reaches an answer.
 
 ## Getting help
 

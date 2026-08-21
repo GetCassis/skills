@@ -162,7 +162,7 @@ Never commit to the default branch. Never edit Cassis-managed branches (created 
 
 ## References
 
-- File format: https://docs.getcassis.com/file-format/
-- Git workflow: https://docs.getcassis.com/git/
-- CLI: https://docs.getcassis.com/cli/
+- File format: https://docs.getcassis.com/reference/schema/
+- Git workflow: https://docs.getcassis.com/build/git-workflow/
+- CLI: https://docs.getcassis.com/reference/cli/
 - Complete worked example: https://github.com/GetCassis/cassis-ontology-examples/tree/main/examples/stallora/cassis
