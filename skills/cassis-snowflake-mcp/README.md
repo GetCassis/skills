@@ -26,8 +26,8 @@ If your Cassis project is connected directly to the warehouse (Cassis handles bo
 
 ## How a question flows
 
-1. First-run check: the skill verifies both MCPs respond and a `project_id` is set. If multiple Cassis projects are accessible, it prompts you to pick one.
-2. Calls `ask_question` with `project_id` and the question.
+1. First-run check: the skill verifies both MCPs respond and a `project_id` is set. If multiple Cassis projects are accessible, it prompts you to pick one. With an API key scoped to one project, there is nothing to pick: the skill uses that project.
+2. Calls `ask_question` with the question, and with `project_id` unless the API key is scoped to one project.
 3. Branches on the response status:
    - **`answered` with SQL**: runs the SQL on Snowflake. Shows result, SQL, true row count.
    - **`answered` with gap text**: surfaces Cassis's clarification verbatim, waits for you to define the missing concept, then resends on the same `chat_id`.
@@ -40,7 +40,7 @@ If your Cassis project is connected directly to the warehouse (Cassis handles bo
 
 ### 1. Connect the Cassis MCP
 
-Cassis MCP is a remote MCP hosted by Cassis at `https://app.getcassis.com/mcp/`. Auth is OAuth 2.1, the browser handles login, no manual token. One connection covers every project you have access to.
+Cassis MCP is a remote MCP hosted by Cassis at `https://app.getcassis.com/mcp/`. Auth is OAuth 2.1, the browser handles login, no manual token. One connection covers every project you have access to. A client that cannot open a browser sends a Cassis API key as a bearer token instead; a key scoped to one project reaches only that project, and the agent omits `project_id`.
 
 Full reference: [docs.getcassis.com/mcp](https://docs.getcassis.com/mcp.html). MCP access is currently limited to Cassis design partners.
 
