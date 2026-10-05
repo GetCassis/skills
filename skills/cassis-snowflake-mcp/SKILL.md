@@ -13,7 +13,7 @@ This skill assumes the user's Cassis project is set up to **generate SQL only**,
 
 ## Required MCPs
 
-- Cassis MCP, authenticated to the user's Cassis org. Org auth is handled at the MCP layer, so the skill works across any project the user has access to.
+- Cassis MCP, authenticated to the user's Cassis org. Org auth is handled at the MCP layer, so the skill works across any project the user has access to, or only the one project an API key is scoped to.
 - A Snowflake MCP connected to the warehouse holding the data referenced by the chosen Cassis project. Cassis returns fully-qualified table names (`"DB"."SCHEMA"."TABLE"`), so the right database and schema are picked automatically. The user only needs to confirm the warehouse context.
 
 ## First-run check (run once per session)
@@ -22,7 +22,7 @@ Before the first question, verify:
 
 1. Cassis MCP responds to `ping`.
 2. At least one Snowflake MCP is reachable (`list_objects` with `object_type=database` succeeds).
-3. A Cassis project_id has been provided. If multiple projects are accessible and none was specified, call `list_projects` and prompt the user to pick.
+3. The Cassis project is known. If the Cassis server instructions say the API key is scoped to one project, that is the project: omit `project_id` on every Cassis call and skip the project lookup. Otherwise a project_id must have been provided; if multiple projects are accessible and none was specified, call `list_projects` and prompt the user to pick.
 
 If any check fails, surface a clear, actionable error:
 
@@ -32,7 +32,7 @@ If any check fails, surface a clear, actionable error:
 
 ## The workflow
 
-Call `ask_question` with `project_id` and `question` (no `chat_id` on the first call).
+Call `ask_question` with `project_id` and `question` (no `chat_id` on the first call). With a project-scoped API key, leave `project_id` out.
 
 Branch on `status`:
 
