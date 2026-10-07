@@ -1,11 +1,11 @@
 ---
 name: cassis-snowflake-mcp
-description: Use this skill to query data with Cassis (which grounds the question against the user's project ontology and returns SQL, a plan to approve, or an ontology gap to clarify) and Snowflake (which executes the SQL). Triggers when the user says "ask cassis", "query with cassis", "cassis question", or asks any natural-language data question while the Cassis MCP and a Snowflake MCP are both connected. Handles all three Cassis response paths: direct SQL, plan approval, and ontology-gap clarification.
+description: Use this skill to query data with Cassis (which grounds the question against the user's project context and returns SQL, a plan to approve, or a context gap to clarify) and Snowflake (which executes the SQL). Triggers when the user says "ask cassis", "query with cassis", "cassis question", or asks any natural-language data question while the Cassis MCP and a Snowflake MCP are both connected. Handles all three Cassis response paths: direct SQL, plan approval, and context-gap clarification.
 ---
 
 # Cassis + Snowflake MCP integration
 
-This skill orchestrates the Cassis MCP (which grounds the question against the project ontology) and a Snowflake MCP (which executes the resulting SQL) so the user can ask plain-language questions and get grounded answers.
+This skill orchestrates the Cassis MCP (which grounds the question against the project context) and a Snowflake MCP (which executes the resulting SQL) so the user can ask plain-language questions and get grounded answers.
 
 ## Scope
 
@@ -40,12 +40,12 @@ Branch on `status`:
 
 Happy path. Run the SQL on Snowflake. Show the result (see Result display) and the generated SQL.
 
-### Path B. `status: answered`, no SQL, gap text in `answer`
+### Path B. `status: not_answerable`, a definition requested in `answer`
 
-Cassis flagged that the question references a concept that isn't in the ontology. Frame the response so the user can see immediately that the next move is theirs:
+Cassis stopped on a concept that isn't in the context (`answer` and `error` carry the request for a definition). Frame the response so the user can see immediately that the next move is theirs:
 
 1. A short header line: **"Cassis is asking you to clarify a concept in your question."**
-2. The `answer` text surfaced verbatim (it lists the undefined concepts and proposes definitions).
+2. The `answer` text surfaced verbatim (it names the undefined concepts and asks you to define them).
 3. A one-line closing instruction: **"Reply with your definitions and I'll continue."**
 
 Then wait. When the user replies, call `ask_question` again with the same `chat_id` and the clarification as the new `question`. This usually transitions to Path C.
@@ -63,7 +63,7 @@ Ask for explicit approval. When the user approves, call `ask_question` again wit
 
 ### Path D. `status: error`
 
-Surface the error and stop. Do not retry silently.
+Surface the error and stop. Do not retry silently. A `not_answerable` with nothing to define (a plan that cannot run against the current context or data) is handled the same way: retrying the same question won't help.
 
 ## Snowflake execution rules
 
@@ -72,11 +72,11 @@ Surface the error and stop. Do not retry silently.
   - Preview note above the result: "Preview of 10 rows (of total M). Ask for the full CSV or a higher row cap if needed."
 - If Snowflake errors:
   - Surface the error text to the user clearly.
-  - Send the error back to Cassis to fix, in the same chat. Call `ask_question` again with the same `chat_id` and the error, for example: "The SQL you generated failed on Snowflake with this error: <error text>. Please correct it." Cassis re-grounds against the ontology and returns corrected SQL, a plan, or an ontology-gap clarification. Handle the response with Paths A to D as usual, and run the corrected SQL under the same approval and Auto-LIMIT rules.
-  - This is the durable path: Cassis owns the fix in-session, so a recurring error becomes an ontology enrichment rather than a one-off local patch.
+  - Send the error back to Cassis to fix, in the same chat. Call `ask_question` again with the same `chat_id` and the error, for example: "The SQL you generated failed on Snowflake with this error: <error text>. Please correct it." Cassis re-grounds against the context and returns corrected SQL, a plan, or a context-gap clarification. Handle the response with Paths A to D as usual, and run the corrected SQL under the same approval and Auto-LIMIT rules.
+  - This is the durable path: Cassis owns the fix in-session, so a recurring error becomes a context enrichment rather than a one-off local patch.
   - Only the error text and the failing SQL go back to Cassis, never result rows or values (see Data protection). Errors are metadata: table and column names, types, syntax.
   - A local patch is a last resort, only if Cassis cannot resolve the error and the fix derives from a concrete signal (Snowflake "did you mean X?", a `describe_object` match, or an obvious casing or quoting issue). Keep it minimal (one column or one quote, never a restructure), show it alongside the original, prepend this warning verbatim, and get explicit approval before running it:
-    > Warning: this is a local workaround. The Cassis ontology is the durable fix for this kind of mismatch. Running this patched query bypasses the ontology, so the same error will hit the next person who asks a related question. Report the issue to your Cassis admins so they can update the ontology.
+    > Warning: this is a local workaround. The Cassis context is the durable fix for this kind of mismatch. Running this patched query bypasses the context, so the same error will hit the next person who asks a related question. Report the issue to your Cassis admins so they can update the context.
 
 ## Result display
 
@@ -99,7 +99,7 @@ When the user accepts the CSV save offer, write the file to disk and report the 
 
 When the user sends a refinement follow-up ("now by month", "filter to last week"), the next `ask_question` call carries only the user's text plus the `chat_id`. The skill does not paraphrase, summarize, paste, or otherwise inject any Snowflake result values into the prompt.
 
-Execution errors are the one thing the skill sends back on purpose. When a query fails, the error text and the failing SQL go to Cassis on the same `chat_id` so it can correct the SQL in-session and, where relevant, surface an ontology gap to enrich. Errors are metadata (table and column names, types, syntax), not data. Never include result rows or values in that message.
+Execution errors are the one thing the skill sends back on purpose. When a query fails, the error text and the failing SQL go to Cassis on the same `chat_id` so it can correct the SQL in-session and, where relevant, surface a context gap to enrich. Errors are metadata (table and column names, types, syntax), not data. Never include result rows or values in that message.
 
 If the user types a value into their own follow-up ("the result was $1.2M, our definition is..."), that's their call. Manual accept mode (recommended in setup docs) gives them a second chance to confirm before the call goes out.
 
@@ -107,11 +107,11 @@ After the first answer in a session, show this once:
 
 > Refinement follow-ups send only your text to Cassis, never the result values from Snowflake. Query errors are sent back so Cassis can fix the SQL in-session.
 
-## Ontology gap notification
+## Context gap notification
 
 When the user works through Path B (clarification) and reaches a final answer, append once per session, after the result:
 
-> Note: your question referenced a concept that isn't yet defined in your project's ontology. Cassis has flagged the gap. Your Cassis admins can review it in the Cassis app and accept a suggested enrichment to the ontology, so future questions on the same concept get answered without redefining it.
+> Note: your question referenced a concept that isn't yet defined in your project's context. Cassis records the gap: it surfaces as an issue your Cassis admins can review in the Cassis app and fix by defining the concept in the context, so future questions on the same concept get answered without redefining it.
 
 Do not repeat this message after every answer in the session.
 
