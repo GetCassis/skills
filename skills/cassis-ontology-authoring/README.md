@@ -1,10 +1,10 @@
-# Adding new domains and context to your Cassis ontology
+# Adding new domains and business knowledge to your Cassis context
 
-This guide is for teams with a live Cassis project who want to extend coverage themselves: new schemas, new domains, richer business context. It shows how to turn the context you already have (schema dumps, dbt YAML, query history, internal docs, agent skills) into ontology files, with a coding agent like Claude Code doing the bulk of the writing and you reviewing.
+This guide is for teams with a live Cassis project who want to extend coverage themselves: new schemas, new domains, richer business context. It shows how to turn the context you already have (schema dumps, dbt YAML, query history, internal docs, agent skills) into context files, with a coding agent like Claude Code doing the bulk of the writing and you reviewing.
 
 You will use three tools together:
 
-- **Your git repository**, where the ontology lives as Markdown domain docs plus YAML data files (see [Ontology in Git](https://docs.getcassis.com/build/git-workflow/))
+- **Your git repository**, where the context lives as Markdown domain docs plus YAML data files (see [Context in Git](https://docs.getcassis.com/build/git-workflow/))
 - **cassis-cli**, to validate, test, and publish (see [CLI reference](https://docs.getcassis.com/reference/cli/))
 - **A coding agent**, guided by `cassis/AGENTS.md` and the prompts below
 
@@ -17,7 +17,7 @@ flowchart LR
     agent["Coding agent<br/>Claude Code, Dust, Cursor"]
     repo["Your git repo<br/>cassis/ Markdown + YAML + AGENTS.md"]
     cli["cassis-cli<br/>check · fmt · test · eval"]
-    cassis["Cassis project<br/>published ontology, issues, evals"]
+    cassis["Cassis project<br/>published context, issues, evals"]
     wh[("Warehouse<br/>or schema dumps")]
     users["Data consumers' agents<br/>MCP, Slack, app"]
 
@@ -32,35 +32,35 @@ flowchart LR
 
 Everything on the left is yours: the files in your repo are the source of truth, your agent writes them, the CLI checks them without touching production. Nothing reaches your data consumers until a merge to the default branch publishes a new version. Real use then flows back as issues, which is where the maintenance loop (end of this guide) picks up.
 
-## What the ontology is made of
+## What the context is made of
 
 | File | What it holds |
 |---|---|
 | `cassis/project.yml` | Project id and format version |
-| `cassis/domains/README.md` | The root domain: high-level context for the whole ontology |
+| `cassis/domains/README.md` | The root domain: high-level knowledge for the whole context |
 | `cassis/domains/<path>/README.md` | A business domain, as a Markdown doc: frontmatter for the structured fields, a body that explains the domain, routes between tables, and links topic docs |
 | `cassis/tables/<schema>/<table>.yml` | One table: grain, description, columns with descriptions and synonyms |
 | `cassis/metrics/<name>.yml` | One metric: definition, SQL, grain |
 | `cassis/joins.yml` | All join paths, centralized |
 
-Domains are Markdown documents in a Cassis profile inspired by [OKF (Open Knowledge Format)](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf), so they render natively when you browse the repo. Tables, joins, and metrics stay YAML: they're data, not documents. Full field-by-field reference: [ontology schema](https://docs.getcassis.com/reference/schema/). For a complete example of what "done" looks like, read the [Stallora ontology](https://github.com/GetCassis/cassis-ontology-examples/tree/main/examples/stallora/cassis): note how the domain READMEs route the agent between tables, and how deep rules live in topic subdomains like `marketplace/measuring-sales`.
+Domains are Markdown documents in a Cassis profile inspired by [OKF (Open Knowledge Format)](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf), so they render natively when you browse the repo. Tables, joins, and metrics stay YAML: they're data, not documents. Full field-by-field reference: [context schema](https://docs.getcassis.com/reference/schema/). For a complete example of what "done" looks like, read the [Stallora context](https://github.com/GetCassis/cassis-ontology-examples/tree/main/examples/stallora/cassis): note how the domain READMEs route the agent between tables, and how deep rules live in topic subdomains like `marketplace/measuring-sales`.
 
 ## Before you start
 
 1. **Set up the repo.** Connect Git ([how](https://docs.getcassis.com/build/git-connect/)), or work CLI-only while iterating and wire up sync later.
-2. **Install the CLI.** Python 3.10+, then `pip install -U cassis-cli` (1.1.0 or newer; older versions predate the Markdown domain format and are rejected on upload). Create an API key under Organization settings and export it as `CASSIS_API_KEY`. The project id is read from `cassis/project.yml`; set `CASSIS_PROJECT_ID` only to override it.
+2. **Install the CLI.** Python 3.10+, then `pip install -U cassis-cli` (3.1.0 or newer: it brings the `cassis context` command group, which older versions spell `cassis ontology`; versions before 1.1.0 predate the Markdown domain format and are rejected on upload). Create an API key under Organization settings and export it as `CASSIS_API_KEY`. The project id is read from `cassis/project.yml`; set `CASSIS_PROJECT_ID` only to override it.
 3. **Pull and format.**
 
 ```bash
-cassis ontology pull   # fresh copy of the project's ontology
-cassis ontology fmt    # canonical formatting; writes cassis/AGENTS.md
+cassis context pull   # fresh copy of the project's context
+cassis context fmt    # canonical formatting; writes cassis/AGENTS.md
 ```
 
-`cassis/AGENTS.md` is the modeling guide: where rules belong, how to write descriptions, metric conventions, and the extension-pass process itself (structure before content). **Have your agent read it before any edit.** It updates with the CLI, so `pip install -U cassis-cli` now and then.
+`cassis/AGENTS.md` is the context design guide: where rules belong, how to write descriptions, metric conventions, and the extension-pass process itself (structure before content). **Have your agent read it before any edit.** It updates with the CLI, so `pip install -U cassis-cli` now and then.
 
 **Migrating an older repo:** if your tree still has the legacy YAML domain files (`_project.yml`, `_domain.yml`), the first `fmt` or `pull` rewrites it to the Markdown layout automatically and refreshes AGENTS.md. Expect that one-time diff, and merge it as its own PR before any content work.
 
-4. **Check the source schema.** The ontology can only map tables Cassis can see. Verify with the `get_source_schema` MCP tool. If a table is missing there: connected warehouses sync automatically; for metadata-only projects, send your Cassis contact an `information_schema` dump for the schema before adding its tables.
+4. **Check the source schema.** The context can only map tables Cassis can see. Verify with the `get_source_schema` MCP tool. If a table is missing there: connected warehouses sync automatically; on a metadata-only project, upload the DDL first (`cassis schema push <ddl>`, or "Update from DDL" on the Schema page) before adding its tables.
 
 ## Pick your path by the context you have
 
@@ -83,13 +83,13 @@ Whatever the source, an extension pass has three phases: **scope** what you're a
 5. After each batch:
 
 ```bash
-cassis ontology fmt && cassis ontology check
+cassis context fmt && cassis context check
 ```
 
 6. Probe the change with a real question:
 
 ```bash
-cassis ontology test -q "a question this new context should now answer"
+cassis context test -q "a question this new context should now answer"
 ```
 
 7. When an expert confirms an answer or a definition, lock it in:
@@ -99,8 +99,8 @@ cassis eval add-case -q "the confirmed question" --gold-sql "the correct SQL"
 cassis eval run        # protect against regressions from now on
 ```
 
-8. Review the flagged unknowns with your agent before shipping. Anything you can answer on the spot gets folded into the ontology as one more batch; the rest travels in the PR body for later.
-9. Open a PR. On a GitHub-synced project, Cassis posts the `cassis / ontology validation` check on it automatically; on GitLab or Bitbucket, a `cassis ontology check` job in your own pipeline is the equivalent gate. A human reviews, and merging to the default branch publishes the new version.
+8. Review the flagged unknowns with your agent before shipping. Anything you can answer on the spot gets folded into the context as one more batch; the rest travels in the PR body for later.
+9. Open a PR. On a GitHub-synced project, Cassis posts the `cassis / ontology validation` check on it automatically; on GitLab or Bitbucket, a `cassis context check` job in your own pipeline is the equivalent gate. A human reviews, and merging to the default branch publishes the new version.
 
 ### Prompt 1: add a schema
 
@@ -108,11 +108,11 @@ cassis eval run        # protect against regressions from now on
 
 ### Prompt 2: fold in prose context
 
-> Read cassis/AGENTS.md. Attached is an internal doc about TOPIC. Fold it into the ontology: durable business rules and routing into the right domain's `README.md`, column-level facts into column descriptions, metric definitions into `metrics/*.yml`. If anything contradicts the existing ontology, flag it to me instead of overwriting.
+> Read cassis/AGENTS.md. Attached is an internal doc about TOPIC. Fold it into the context: durable business rules and routing into the right domain's `README.md`, column-level facts into column descriptions, metric definitions into `metrics/*.yml`. If anything contradicts the existing context, flag it to me instead of overwriting.
 
 ### Prompt 3: mine query history
 
-> Read cassis/AGENTS.md. Attached are frequently run queries against schema X. Extract recurring metrics (name, grain, SQL), join paths missing from `joins.yml`, and gotchas (filters everyone applies, magic values, date guards). Propose them as ontology files. Where two queries disagree on a definition, include both with the difference spelled out.
+> Read cassis/AGENTS.md. Attached are frequently run queries against schema X. Extract recurring metrics (name, grain, SQL), join paths missing from `joins.yml`, and gotchas (filters everyone applies, magic values, date guards). Propose them as context files. Where two queries disagree on a definition, include both with the difference spelled out.
 
 ## Keeping a big domain from exploding
 
