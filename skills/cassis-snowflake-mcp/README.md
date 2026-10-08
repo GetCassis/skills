@@ -35,6 +35,7 @@ If your Cassis project is connected directly to the warehouse (Cassis handles bo
    - **`error`**: surfaces and stops. No silent retries.
 4. Auto-LIMIT: for row-returning SELECTs without `LIMIT`, `GROUP BY`, or aggregates, the skill wraps the query with `LIMIT 10` for preview and runs a separate `COUNT(*)` for the true total. CSV save offered for the full result.
 5. Error recovery: if Snowflake rejects the SQL, the skill sends the error back to Cassis on the same `chat_id` and runs the corrected query, rather than hand-patching. Only the error text and the SQL go back, never result rows, so Cassis can fix the SQL in-session and flag a context gap to enrich. A minimal local patch is a last resort, only on a concrete signal and with explicit approval.
+6. Feedback: when you say an answer was right or wrong, the skill offers to record it in Cassis with `submit_feedback`, an up or down rating with your reason, on the same `chat_id`. Cassis never sees the Snowflake result, so your verdict is how it learns whether the SQL answered the question. Only your reason is sent, never result values.
 
 ## Setup
 

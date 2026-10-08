@@ -115,6 +115,15 @@ When the user works through Path B (clarification) and reaches a final answer, a
 
 Do not repeat this message after every answer in the session.
 
+## Feedback
+
+When the user says whether an answer was right or wrong, offer to send that to Cassis. Cassis never sees the Snowflake result, so the user's verdict is the only signal it gets on whether the SQL answered the question.
+
+- Call `submit_feedback` with the same `chat_id`, `rating` (`up` or `down`), and a `justification` in the user's own words (non-empty, at most 10,000 characters). With a project-scoped API key, leave `project_id` out. It records the rating on the conversation without starting an answer, so it can go out at any point.
+- Send it only on the user's request or after they confirm. Never rate on your own judgment, and never send a rating automatically after a Snowflake error: the error-correction loop above already reports those.
+- The data protection rule applies: the justification carries the user's reason, never Snowflake result values. If the user quotes a value in their reason, that's their call, as for a follow-up.
+- A rating does not change the answer. If the user also wants a corrected answer, send the correction as a new `ask_question` on the same `chat_id`.
+
 ## Chat continuity
 
 - Preserve `chat_id` across turns within a single user session so refinements thread correctly.
@@ -128,5 +137,7 @@ Per question, the skill typically asks for 2 to 4 approvals:
 2. If the plan path triggers: the `execute_pending_plan` call.
 3. The Snowflake preview query.
 4. If a separate `COUNT(*)` is needed for the true total on a row-returning SELECT: a second Snowflake call. Avoid this when the user only wants the preview.
+
+A `submit_feedback` call, when the user rates the answer, is one more approval, outside this per-question count.
 
 Avoid chatty patterns that would create more than this. Batch where possible.
