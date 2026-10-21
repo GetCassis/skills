@@ -23,7 +23,7 @@ This skill extends an **existing** Cassis context in a git repo. It is not for i
 ## Preflight (once per session)
 
 1. Locate the context tree (default `cassis/`, or the repo's configured base path). If absent, stop: this repo isn't a Cassis context checkout. Suggest `cassis context pull` or point to the git setup docs.
-2. `cassis version` reports 3.1.0 or newer. The subcommand is `cassis version`, not `cassis --version` (there is no such flag). If the version is older: `pip install -U cassis-cli` (Python 3.10+). Older versions spell the command group `cassis ontology` (still accepted as a hidden alias, so old scripts keep working), and versions before 1.1.0 predate the Markdown domain format and are rejected on upload.
+2. `cassis version` reports 3.2.0 or newer (the current design guide, with column `enum_values`). The subcommand is `cassis version`, not `cassis --version` (there is no such flag). If the version is older: `pip install -U cassis-cli` (Python 3.10+). Older versions spell the command group `cassis ontology` (still accepted as a hidden alias, so old scripts keep working), and versions before 1.1.0 predate the Markdown domain format and are rejected on upload.
 3. `CASSIS_API_KEY` is set. If not, ask the user (Organization settings → API keys). The project id comes from `CASSIS_PROJECT_ID`, or from the project file in the context tree on repos new enough to carry one. A legacy tree (`_project.yml`) holds no project id at all, so `CASSIS_PROJECT_ID` is required there for anything that talks to a project (`context test`, `eval run`, `upload`). `context check` and `context fmt` need only the key.
 4. If the tree still holds legacy YAML domains (`_project.yml`, `_domain.yml`), run `cassis context fmt` once: it migrates the repo to the Markdown domain layout (domains become `README.md` files) and refreshes `AGENTS.md`. Commit that migration as its **own commit** so the content diff stays readable. It ships in the same PR as the content work; a separate PR is not worth the round trip.
 5. Run `cassis context fmt` once: it writes or refreshes `cassis/AGENTS.md` to the current doctrine version. If it changed anything beyond AGENTS.md, commit that normalization separately. Then read AGENTS.md.
@@ -62,22 +62,23 @@ Write in this order. It is not a list of concerns, it is the sequence: **(1) con
 
 1. Confirm the tables are visible to Cassis: check `get_source_schema` (MCP) or ask the user. Tables in the context but absent from the source schema break query generation. If missing: connected warehouses sync automatically; on a metadata-only project the user uploads the DDL first (`cassis schema push <ddl>`, or "Update from DDL" on the Schema page). Do not proceed for invisible tables. If the MCP is not connected, this is a question for the user, not something to assume: a schema dump proves the columns, never that Cassis can see the table.
 2. Create `tables/<schema>/<table>.yml` per table, following AGENTS.md conventions. State only what the schema proves: grain, types, keys, nullability. No invented semantics.
-   **A hedged guess is still a guess.** The no-invention rule is not limited to enum values. Do not write a storage format ("likely `'M:SS.mmm'`"), a cause of nullability ("may be non-numeric for cars that never started"), a physical event ("when the driver entered the pit lane"), or a scope qualifier ("ranks among non-finishers") that the source does not state. "Likely", "probably" and "appears to be" do not make a claim safe: the agent reads the sentence, not the hedge. Write what the dump proves, and put the rest in the TODO list.
+   **A hedged guess is still a guess.** The no-invention rule is not limited to `enum_values`. Do not write a storage format ("likely `'M:SS.mmm'`"), a cause of nullability ("may be non-numeric for cars that never started"), a physical event ("when the driver entered the pit lane"), or a scope qualifier ("ranks among non-finishers") that the source does not state. "Likely", "probably" and "appears to be" do not make a claim safe: the agent reads the sentence, not the hedge. Write what the dump proves, and put the rest in the TODO list.
    **Never invent a contrast with a column you did not read.** When a new column shares a name with one on an existing table (`position_order`, `status_id`, `lap`), the tempting sentence is "this one means X, unlike the other one". You cannot know that from a dump. Open the sibling's description: if it applies, reuse its wording; if you cannot confirm the relationship, say the relationship is unverified and add it to the TODO list. A confidently drawn false distinction is worse than silence, because it survives review as a documented decision.
-   Encode an enum value list only when it is verified (a user-run `SELECT DISTINCT`, query history, or docs quoting the stored values). Never approximate one or write "etc.": a wrong example primes the agent harder than no example.
+   A column's stored values go in its `enum_values` (every value verbatim and case-exact, each value's meaning in its own `description`), never as a list in the column description. Encode the set only when it is verified and complete (a user-run `SELECT DISTINCT`, a `CHECK ... IN (...)` in the DDL, query history, or docs quoting the stored values). Never approximate one, write "etc.", or encode a partial set: the agent treats the list as closed, so a wrong or short list primes it harder than no list; leave the field out and add the question to the TODO list. A verified prose list you meet while touching a table moves into `enum_values` in the same change; a hedged one ("e.g.", "such as", "include") is verified or dropped, never promoted. In YAML every value is a string: quote numbers (`'07'`), yes/no/on/off, null and dates, or validation rejects the file.
 3. Add the joins the new tables need, hub-and-spoke (see Playbook 3). A shared column name is not a join.
 4. Metrics are **not** derivable from a schema dump: a dump proves a column exists, never which aggregation the business calls by a name. Do not invent them. Do name the obvious candidates for the user, as a question, in the unknowns review: "these tables would usually carry metrics X and Y, do you want them, and how do you define them?" Silently shipping zero metrics is as unhelpful as guessing at them.
 5. The domain files were created frontmatter-only at the structure step. Write each domain README body **last**, after every table file in that domain exists, mapping the tables and how they relate. A README written first is a guess about files you have not written yet.
    The README body carries **only** what AGENTS.md §3 "Never restate the structured fields" leaves it: cross-table routing, and join or filter recipes no structured field can express. Tables, columns, metrics and joins are already surfaced to the agent with their descriptions, units, grain and conditions. So no `## Tables` list, no re-pasted formula, no types, units, cast gotchas or format notes: those belong in the column description and nowhere else. Test each sentence: if it would still be true pasted into one table's or column's `description`, it belongs there, not here.
    The generated `<!-- cassis:nav:begin -->` block at the bottom of each README is not an exception to this and not a model for it. `fmt` regenerates it and strips it before the agent ever sees the file, so it is GitHub navigation for humans. Leave it alone and do not imitate it in the body.
-6. Collect every open business question (ambiguous column, unknown enum values, unclear grain) into a TODO list **as you go**, written down, not held in your head: a `TODO-ontology.md` at the repo root, or an equivalent scratch file. It gets reviewed with the user before delivery (see "Review unknowns, then deliver") and folded into the PR body. Two bullets in a closing summary is not a TODO list. An explicitly flagged unknown is recoverable; a guessed definition poisons answers silently.
+6. Collect every open business question (ambiguous column, unverified value set, unclear grain) into a TODO list **as you go**, written down, not held in your head: a `TODO-ontology.md` at the repo root, or an equivalent scratch file. It gets reviewed with the user before delivery (see "Review unknowns, then deliver") and folded into the PR body. Two bullets in a closing summary is not a TODO list. An explicitly flagged unknown is recoverable; a guessed definition poisons answers silently.
 
 ## Playbook 2: fold in prose
 
 Route each piece of content to where AGENTS.md says it belongs:
 
 - Durable business rules, routing logic, vocabulary → the right domain's `README.md` body (create topic subdomains with their own README for deep subjects rather than bloating one doc)
-- Column-level facts (value lists, magic values, gotchas) → column descriptions
+- A column's complete, verified set of stored values → that column's `enum_values`, each value's meaning in its own `description` (Playbook 1's verification rule applies; a hedged or partial list stays out)
+- Other column-level facts (magic values, encodings, gotchas) → column descriptions
 - Metric definitions → `metrics/<name>.yml`
 - Alternate names → synonyms
 
@@ -90,6 +91,7 @@ From the queries, extract:
 - Recurring metrics: name, grain, SQL → `metrics/*.yml`
 - Join paths not yet in `joins.yml` (hub-and-spoke for keys shared by many tables; never a join between every pair of tables that share a column name)
 - Gotchas: filters everyone applies, date guards, magic values → column descriptions or the domain `README.md`
+- Values the queries filter or branch on (`IN (...)`, `CASE`) → the column's `enum_values` only once the full set is verified (Playbook 1): a query shows those values exist, not that they are all of them; until then they stay a note in the description
 
 Where two queries disagree on a definition, include both with the difference spelled out, per AGENTS.md.
 
@@ -114,7 +116,7 @@ Cassis detects recurring problems from real conversations and failing evals. `li
 cassis context fmt && cassis context check
 ```
 
-Fix until green. Then probe with at least one real question the change should now answer:
+Fix until green. `check` also warns (`enum_value_type`) when an `enum_values` entry can't be stored by the column's type (`abc` on an INTEGER, `07` where the warehouse stores `7`); a warning doesn't fail the check, but the value is not what the warehouse holds, so fix it. Then probe with at least one real question the change should now answer:
 
 ```bash
 cassis context test -q "<question>"

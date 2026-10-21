@@ -39,7 +39,7 @@ Everything on the left is yours: the files in your repo are the source of truth,
 | `cassis/project.yml` | Project id and format version |
 | `cassis/domains/README.md` | The root domain: high-level knowledge for the whole context |
 | `cassis/domains/<path>/README.md` | A business domain, as a Markdown doc: frontmatter for the structured fields, a body that explains the domain, routes between tables, and links topic docs |
-| `cassis/tables/<schema>/<table>.yml` | One table: grain, description, columns with descriptions and synonyms |
+| `cassis/tables/<schema>/<table>.yml` | One table: grain, description, columns with descriptions, synonyms and the values they store (`enum_values`) |
 | `cassis/metrics/<name>.yml` | One metric: definition, SQL, grain |
 | `cassis/joins.yml` | All join paths, centralized |
 
@@ -48,7 +48,7 @@ Domains are Markdown documents in a Cassis profile inspired by [OKF (Open Knowle
 ## Before you start
 
 1. **Set up the repo.** Connect Git ([how](https://docs.getcassis.com/build/git-connect/)), or work CLI-only while iterating and wire up sync later.
-2. **Install the CLI.** Python 3.10+, then `pip install -U cassis-cli` (3.1.0 or newer: it brings the `cassis context` command group, which older versions spell `cassis ontology`; versions before 1.1.0 predate the Markdown domain format and are rejected on upload). Create an API key under Organization settings and export it as `CASSIS_API_KEY`. The project id is read from `cassis/project.yml`; set `CASSIS_PROJECT_ID` only to override it.
+2. **Install the CLI.** Python 3.10+, then `pip install -U cassis-cli` (3.2.0 or newer: it brings the current design guide, with column `enum_values`; versions before 3.1.0 spell the `cassis context` command group `cassis ontology`; versions before 1.1.0 predate the Markdown domain format and are rejected on upload). Create an API key under Organization settings and export it as `CASSIS_API_KEY`. The project id is read from `cassis/project.yml`; set `CASSIS_PROJECT_ID` only to override it.
 3. **Pull and format.**
 
 ```bash
@@ -68,7 +68,7 @@ cassis context fmt    # canonical formatting; writes cassis/AGENTS.md
 |---|---|---|
 | Schema dump or DDLs | New table files plus a domain skeleton | Prompt 1 below |
 | dbt YAML and docs | Table and column descriptions, synonyms | Prompt 2 |
-| Query history, dashboard SQL | Metrics, join paths, value-list gotchas | Prompt 3 |
+| Query history, dashboard SQL | Metrics, join paths, stored values, gotchas | Prompt 3 |
 | Internal docs, runbooks, agent skills, personal notes | Domain and topic READMEs | Prompt 2 |
 | An expert's head | Eval cases plus domain rules | Verification loop below |
 
@@ -108,11 +108,11 @@ cassis eval run        # protect against regressions from now on
 
 ### Prompt 2: fold in prose context
 
-> Read cassis/AGENTS.md. Attached is an internal doc about TOPIC. Fold it into the context: durable business rules and routing into the right domain's `README.md`, column-level facts into column descriptions, metric definitions into `metrics/*.yml`. If anything contradicts the existing context, flag it to me instead of overwriting.
+> Read cassis/AGENTS.md. Attached is an internal doc about TOPIC. Fold it into the context: durable business rules and routing into the right domain's `README.md`, column-level facts into column descriptions, a column's complete set of stored values into its `enum_values` (each value's meaning in its own description; a hedged or partial list stays out), metric definitions into `metrics/*.yml`. If anything contradicts the existing context, flag it to me instead of overwriting.
 
 ### Prompt 3: mine query history
 
-> Read cassis/AGENTS.md. Attached are frequently run queries against schema X. Extract recurring metrics (name, grain, SQL), join paths missing from `joins.yml`, and gotchas (filters everyone applies, magic values, date guards). Propose them as context files. Where two queries disagree on a definition, include both with the difference spelled out.
+> Read cassis/AGENTS.md. Attached are frequently run queries against schema X. Extract recurring metrics (name, grain, SQL), join paths missing from `joins.yml`, and gotchas (filters everyone applies, magic values, date guards). Values the queries filter on go in the column's `enum_values` only once the full set is verified (a `SELECT DISTINCT`, a `CHECK` constraint); a filter's `IN (...)` is not proof of completeness. Propose them as context files. Where two queries disagree on a definition, include both with the difference spelled out.
 
 ## Keeping a big domain from exploding
 
