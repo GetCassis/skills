@@ -48,7 +48,7 @@ Domains are Markdown documents in a Cassis profile inspired by [OKF (Open Knowle
 ## Before you start
 
 1. **Set up the repo.** Connect Git ([how](https://docs.getcassis.com/build/git-connect/)), or work CLI-only while iterating and wire up sync later.
-2. **Install the CLI.** Python 3.10+, then `pip install -U cassis-cli` (3.2.0 or newer: it brings the current design guide, with column `enum_values`; versions before 3.1.0 spell the `cassis context` command group `cassis ontology`; versions before 1.1.0 predate the Markdown domain format and are rejected on upload). Create an API key under Organization settings and export it as `CASSIS_API_KEY`. The project id is read from `cassis/project.yml`; set `CASSIS_PROJECT_ID` only to override it.
+2. **Install the CLI.** Python 3.10+, then `pip install -U cassis-cli` (3.2.0 or newer; versions before 3.1.0 spell the `cassis context` command group `cassis ontology`; versions before 1.1.0 predate the Markdown domain format and are rejected on upload). Create an API key under Organization settings and export it as `CASSIS_API_KEY`. The project id is read from `cassis/project.yml`; set `CASSIS_PROJECT_ID` only to override it.
 3. **Pull and format.**
 
 ```bash
