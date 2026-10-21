@@ -116,7 +116,7 @@ Cassis detects recurring problems from real conversations and failing evals. `li
 cassis context fmt && cassis context check
 ```
 
-Fix until green. `check` also warns (`enum_value_type`) when an `enum_values` entry can't be stored by the column's type (`abc` on an INTEGER, `07` where the warehouse stores `7`); a warning doesn't fail the check, but the value is not what the warehouse holds, so fix it. Then probe with at least one real question the change should now answer:
+Fix until green. Then probe with at least one real question the change should now answer:
 
 ```bash
 cassis context test -q "<question>"
