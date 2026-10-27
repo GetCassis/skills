@@ -48,7 +48,7 @@ Domains are Markdown documents in a Cassis profile inspired by [OKF (Open Knowle
 ## Before you start
 
 1. **Set up the repo.** Connect Git ([how](https://docs.getcassis.com/build/git-connect/)), or work CLI-only while iterating and wire up sync later.
-2. **Install the CLI.** Python 3.10+, then `pip install -U cassis-cli` (3.2.0 or newer; versions before 3.1.0 spell the `cassis context` command group `cassis ontology`; versions before 1.1.0 predate the Markdown domain format and are rejected on upload). Create an API key under Organization settings and export it as `CASSIS_API_KEY`. The project id is read from `cassis/project.yml`; set `CASSIS_PROJECT_ID` only to override it.
+2. **Install the CLI.** Python 3.10+, then `pip install -U cassis-cli` (3.3.0 or newer; versions before 3.1.0 spell the `cassis context` command group `cassis ontology`; versions before 1.1.0 predate the Markdown domain format and are rejected on upload). Create an API key under Organization settings and export it as `CASSIS_API_KEY`. The project id is read from `cassis/project.yml`; set `CASSIS_PROJECT_ID` only to override it.
 3. **Pull and format.**
 
 ```bash
@@ -67,7 +67,7 @@ cassis context fmt    # canonical formatting; writes cassis/AGENTS.md
 | What you have | What it becomes | How |
 |---|---|---|
 | Schema dump or DDLs | New table files plus a domain skeleton | Prompt 1 below |
-| dbt YAML and docs | Table and column descriptions, synonyms | Prompt 2 |
+| dbt YAML and docs | Descriptions where warehouse comments fall short, synonyms | Prompt 2 |
 | Query history, dashboard SQL | Metrics, join paths, stored values, gotchas | Prompt 3 |
 | Internal docs, runbooks, agent skills, personal notes | Domain and topic READMEs | Prompt 2 |
 | An expert's head | Eval cases plus domain rules | Verification loop below |
@@ -86,6 +86,8 @@ Whatever the source, an extension pass has three phases: **scope** what you're a
 cassis context fmt && cassis context check
 ```
 
+In a checkout bound to a project, `check` also warns about eval cases whose gold SQL reads tables your change removes.
+
 6. Probe the change with a real question:
 
 ```bash
@@ -99,6 +101,8 @@ cassis eval add-case -q "the confirmed question" --gold-sql "the correct SQL"
 cassis eval run        # protect against regressions from now on
 ```
 
+`add-case` warns when the gold SQL reads a table the context lacks or a name it can't resolve. If a case later looks flaky, `cassis eval history <case-id>` shows its pass rate and whether repeated runs disagree.
+
 8. Review the flagged unknowns with your agent before shipping. Anything you can answer on the spot gets folded into the context as one more batch; the rest travels in the PR body for later.
 9. Open a PR. On a GitHub-synced project, Cassis posts the `cassis / ontology validation` check on it automatically; on GitLab or Bitbucket, a `cassis context check` job in your own pipeline is the equivalent gate. A human reviews, and merging to the default branch publishes the new version.
 
@@ -108,7 +112,7 @@ cassis eval run        # protect against regressions from now on
 
 ### Prompt 2: fold in prose context
 
-> Read cassis/AGENTS.md. Attached is an internal doc about TOPIC. Fold it into the context: durable business rules and routing into the right domain's `README.md`, column-level facts into column descriptions, a column's complete set of stored values into its `enum_values` (each value's meaning in its own description; a hedged or partial list stays out), metric definitions into `metrics/*.yml`. If anything contradicts the existing context, flag it to me instead of overwriting.
+> Read cassis/AGENTS.md. Attached is an internal doc about TOPIC. Fold it into the context: durable business rules and routing into the right domain's `README.md`, column-level facts into column descriptions, a column's complete set of stored values into its `enum_values` (each value's meaning in its own description; a hedged or partial list stays out), metric definitions into `metrics/*.yml`. Don't copy a description the warehouse already carries as a comment (including dbt descriptions written with `persist_docs`): the agent reads those comments already, so write a description only where the comment is missing, wrong or incomplete. If anything contradicts the existing context, flag it to me instead of overwriting.
 
 ### Prompt 3: mine query history
 
@@ -126,7 +130,7 @@ Some domains carry hundreds of tables and messy, overlapping concepts. What work
 
 ## Once it's live: maintenance
 
-Real use starts feeding back. Cassis detects recurring problems from conversations and failing evals; your agent reads the queue over MCP (`list_issues`, `get_issue`, `get_issue_evidence`), fixes the files on a branch, and opens a PR. Your review stays the gate. Full loop: [curate with an agent](https://docs.getcassis.com/curate/agent/). Connected warehouses also get schema drift flagged for review before it reaches an answer.
+Real use starts feeding back. Cassis detects recurring problems from conversations and failing evals; your agent reads the queue over MCP (`list_issues`, `get_issue`, `get_issue_evidence`), fixes the files on a branch, and opens a PR. Your review stays the gate. Issues come ordered by priority, then impact, then reach (how many chat answers used their tables in the last 30 days). If your dbt project runs `cassis dbt push` in its CI, a merged dbt change that puts the context in doubt lands in the same queue, and `cassis dbt check` lists those findings on the dbt pull request before it merges. Full loop: [curate with an agent](https://docs.getcassis.com/curate/agent/). Connected warehouses also get schema drift flagged for review before it reaches an answer.
 
 ## Getting help
 
