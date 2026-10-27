@@ -23,7 +23,7 @@ This skill extends an **existing** Cassis context in a git repo. It is not for i
 ## Preflight (once per session)
 
 1. Locate the context tree (default `cassis/`, or the repo's configured base path). If absent, stop: this repo isn't a Cassis context checkout. Suggest `cassis context pull` or point to the git setup docs.
-2. `cassis version` reports 3.2.0 or newer. The subcommand is `cassis version`, not `cassis --version` (there is no such flag). If the version is older: `pip install -U cassis-cli` (Python 3.10+). Older versions spell the command group `cassis ontology` (still accepted as a hidden alias, so old scripts keep working), and versions before 1.1.0 predate the Markdown domain format and are rejected on upload.
+2. `cassis version` reports 3.3.0 or newer. The subcommand is `cassis version`, not `cassis --version` (there is no such flag). If the version is older: `pip install -U cassis-cli` (Python 3.10+). Older versions spell the command group `cassis ontology` (still accepted as a hidden alias, so old scripts keep working), and versions before 1.1.0 predate the Markdown domain format and are rejected on upload.
 3. `CASSIS_API_KEY` is set. If not, ask the user (Organization settings → API keys). The project id comes from `CASSIS_PROJECT_ID`, or from the project file in the context tree on repos new enough to carry one. A legacy tree (`_project.yml`) holds no project id at all, so `CASSIS_PROJECT_ID` is required there for anything that talks to a project (`context test`, `eval run`, `upload`). `context check` and `context fmt` need only the key.
 4. If the tree still holds legacy YAML domains (`_project.yml`, `_domain.yml`), run `cassis context fmt` once: it migrates the repo to the Markdown domain layout (domains become `README.md` files) and refreshes `AGENTS.md`. Commit that migration as its **own commit** so the content diff stays readable. It ships in the same PR as the content work; a separate PR is not worth the round trip.
 5. Run `cassis context fmt` once: it writes or refreshes `cassis/AGENTS.md` to the current doctrine version. If it changed anything beyond AGENTS.md, commit that normalization separately. Then read AGENTS.md.
@@ -61,7 +61,7 @@ The gate applies even when the request looks unambiguous, even when the structur
 Write in this order. It is not a list of concerns, it is the sequence: **(1) confirm visibility, (2) table files, (3) joins, (4) metrics, (5) domain README bodies last, (6) unknowns to the TODO list throughout.**
 
 1. Confirm the tables are visible to Cassis: check `get_source_schema` (MCP) or ask the user. Tables in the context but absent from the source schema break query generation. If missing: connected warehouses sync automatically; on a metadata-only project the user uploads the DDL first (`cassis schema push <ddl>`, or "Update from DDL" on the Schema page). Do not proceed for invisible tables. If the MCP is not connected, this is a question for the user, not something to assume: a schema dump proves the columns, never that Cassis can see the table.
-2. Create `tables/<schema>/<table>.yml` per table, following AGENTS.md conventions. State only what the schema proves: grain, types, keys, nullability. No invented semantics.
+2. Create `tables/<schema>/<table>.yml` per table, following AGENTS.md conventions. State only what the schema proves: grain, types, keys, nullability. No invented semantics. The agent reads the warehouse's own comment on a table or column that has no `description`, so don't copy that comment into one (see Playbook 2).
    **A hedged guess is still a guess.** The no-invention rule is not limited to `enum_values`. Do not write a storage format ("likely `'M:SS.mmm'`"), a cause of nullability ("may be non-numeric for cars that never started"), a physical event ("when the driver entered the pit lane"), or a scope qualifier ("ranks among non-finishers") that the source does not state. "Likely", "probably" and "appears to be" do not make a claim safe: the agent reads the sentence, not the hedge. Write what the dump proves, and put the rest in the TODO list.
    **Never invent a contrast with a column you did not read.** When a new column shares a name with one on an existing table (`position_order`, `status_id`, `lap`), the tempting sentence is "this one means X, unlike the other one". You cannot know that from a dump. Open the sibling's description: if it applies, reuse its wording; if you cannot confirm the relationship, say the relationship is unverified and add it to the TODO list. A confidently drawn false distinction is worse than silence, because it survives review as a documented decision.
    A column's stored values go in its `enum_values` (every value verbatim and case-exact, each value's meaning in its own `description`), never as a list in the column description. Encode the set only when it is verified and complete (a user-run `SELECT DISTINCT`, a `CHECK ... IN (...)` in the DDL, query history, or docs quoting the stored values). Never approximate one, write "etc.", or encode a partial set: the agent treats the list as closed, so a wrong or short list primes it harder than no list; leave the field out and add the question to the TODO list. A verified prose list you meet while touching a table moves into `enum_values` in the same change; a hedged one ("e.g.", "such as", "include") is verified or dropped, never promoted. In YAML every value is a string: quote numbers (`'07'`), yes/no/on/off, null and dates, or validation rejects the file.
@@ -82,6 +82,8 @@ Route each piece of content to where AGENTS.md says it belongs:
 - Metric definitions → `metrics/<name>.yml`
 - Alternate names → synonyms
 
+**Don't copy warehouse comments.** Where a table or column has no `description`, the agent reads the warehouse's own comment on it, including dbt descriptions written to the warehouse with `persist_docs`. Before folding dbt YAML or a catalog export into descriptions, check which comments already exist: `get_source_schema` with the table names returns each source comment. Write a `description` only when the comment is missing, wrong or incomplete. A `description` replaces the comment entirely, so carry over the parts of the comment that still hold. dbt descriptions that never reach the warehouse still need folding in.
+
 If the source contradicts the existing context, flag it to the user with both versions. Never silently overwrite. Discard content that is transient (deadlines, people, one-off analyses): the context holds durable meaning only.
 
 ## Playbook 3: mine queries
@@ -97,15 +99,17 @@ Where two queries disagree on a definition, include both with the difference spe
 
 ## Playbook 4: work the issue queue
 
-Cassis detects recurring problems from real conversations and failing evals. `list_issues` is the queue, `get_issue` adds the occurrences and the fix proposal, `get_issue_evidence` the raw evidence behind one occurrence. You have the same material the app's own assistant works from, so the value you add is not cleverness, it is running the loop properly.
+Cassis detects recurring problems from real conversations and failing evals, and files issues from merged dbt changes when the dbt project runs `cassis dbt push` in CI. `list_issues` is the queue, ordered by priority, then impact, then reach (the chat answers that used the issue's tables in the last 30 days). `get_issue` adds the occurrences and the fix proposal, `get_issue_evidence` the raw evidence behind one occurrence. You have the same material the app's own assistant works from, so the value you add is not cleverness, it is running the loop properly.
 
 1. **Read the whole issue before editing anything.** `get_issue`, then `get_issue_evidence` on the occurrences that actually decide the question. Occurrences are evidence, not a specification: a resolution a user stated in-thread is a claim, and gets verified like any other expert assertion before you encode it.
+   - `origin: dbt` (impact `at_risk`): a merged dbt change put this part of the context in doubt; nothing has gone wrong in an answer yet. The `dbt` block names the model, column, commit and pull request, and `get_issue_evidence` returns the change and its diff. Check the context files it names against the change before editing.
+   - A failed eval case: `get_eval_run` shows whether the plan reached the tables the gold SQL reads (`dependency`) and where the SQL departed from the gold (`judge_divergence`). Before treating a failure as a context gap, `cassis eval history <case-id>` tells a noisy case (verdicts that disagree under one configuration) from one that fails steadily.
 2. **Route on the proposal, and respect what it is telling you.**
    - `kind=apply_resolution`, `status=ready`: `mutations` are concrete context operations. They are app-shaped (`create_metric`, `update_column`), so translate them into the repo's equivalent edit rather than transcribing them; the file layout is yours to get right.
    - `kind=reference_tables`, `status=flagged`: this is an extension pass, not a patch. `get_source_schema` for the named tables, then Playbook 1 in full, structure gate included. Do not smuggle new tables in as a bugfix.
    - `kind=manual`, or no proposal at all: read `triage_reason`. This is usually undefined business meaning, which is exactly where a guess does the most damage. It routes to the user, not to a clever inference.
 3. **Verify on your local files, never by re-asking.** `ask_question` answers from the *published* head; your fix is sitting uncommitted in the repo, so re-asking shows no change and reads as "the fix failed". Probe with `cassis context test -q "<the question from the occurrence>"`, which runs against the checkout.
-4. **Lock it against regression before you ship it.** `cassis eval add-case` with the occurrence's question and the now-correct SQL. An issue fixed without a gold case is an issue that comes back, and the eval is what proves the fix to whoever reviews the PR.
+4. **Lock it against regression before you ship it.** `cassis eval add-case` with the occurrence's question and the now-correct SQL. An issue fixed without a gold case is an issue that comes back, and the eval is what proves the fix to whoever reviews the PR. `add-case` warns when the gold SQL does not resolve against the context: fix an ambiguous bare name or a typo, but a table your change adds is expected to be missing until the merge publishes it.
 5. **Reference the issue in the PR body** (id and link). The PR is where a reviewer reconstructs why this change exists.
 6. **Close it after the merge publishes, not after the commit.** `update_issue_status` → resolved. Until the merge syncs, the fix is not live and the issue is still true. Closing early makes the queue lie.
 7. **One issue per PR** wherever the fixes are independent. A bundled PR is hard to review and impossible to revert one piece of.
@@ -116,7 +120,9 @@ Cassis detects recurring problems from real conversations and failing evals. `li
 cassis context fmt && cassis context check
 ```
 
-Fix until green. Then probe with at least one real question the change should now answer:
+Fix until green. In a checkout bound to a project, `check` also warns about eval cases whose gold SQL reads tables your files no longer have. Those warnings never fail the check, but each names a case your change breaks: raise it with the user and note it in the PR body.
+
+Then probe with at least one real question the change should now answer:
 
 ```bash
 cassis context test -q "<question>"
@@ -134,7 +140,7 @@ Whenever the user (or an expert they consulted) confirms an answer or a definiti
 cassis eval add-case -q "<the confirmed question>" --gold-sql "<the correct SQL>"
 ```
 
-Both flags are required; there is no interactive prompt.
+Both flags are required; there is no interactive prompt. Then run just that case, `cassis eval run --case <id>` with the id `add-case` printed: it prints the generated SQL for passed cases too, so check that it passes for the right reason.
 
 Before opening the PR, if the project has an eval suite:
 
