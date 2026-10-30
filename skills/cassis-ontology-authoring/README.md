@@ -48,7 +48,7 @@ Domains are Markdown documents in a Cassis profile inspired by [OKF (Open Knowle
 ## Before you start
 
 1. **Set up the repo.** Connect Git ([how](https://docs.getcassis.com/build/git-connect/)), or work CLI-only while iterating and wire up sync later.
-2. **Install the CLI.** Python 3.10+, then `pip install -U cassis-cli` (3.3.0 or newer; versions before 3.1.0 spell the `cassis context` command group `cassis ontology`; versions before 1.1.0 predate the Markdown domain format and are rejected on upload). Create an API key under Organization settings and export it as `CASSIS_API_KEY`. The project id is read from `cassis/project.yml`; set `CASSIS_PROJECT_ID` only to override it.
+2. **Install the CLI.** Python 3.10+, then `pip install -U cassis-cli` (3.4.0 or newer; versions before 3.1.0 spell the `cassis context` command group `cassis ontology`; versions before 1.1.0 predate the Markdown domain format and are rejected on upload). Create an API key under Organization settings and export it as `CASSIS_API_KEY`. The project id is read from `cassis/project.yml`; set `CASSIS_PROJECT_ID` only to override it.
 3. **Pull and format.**
 
 ```bash
@@ -101,7 +101,7 @@ cassis eval add-case -q "the confirmed question" --gold-sql "the correct SQL"
 cassis eval run        # protect against regressions from now on
 ```
 
-`add-case` warns when the gold SQL reads a table the context lacks or a name it can't resolve. If a case later looks flaky, `cassis eval history <case-id>` shows its pass rate and whether repeated runs disagree.
+`add-case` warns when the gold SQL reads a table the context lacks or a name it can't resolve. Cassis then runs the new case three times in the background, and `cassis eval list-cases` flags it if the attempts disagree or none passed. If a case later looks flaky, `cassis eval history <case-id>` shows its pass rate and whether repeated runs disagree, and `cassis eval run --case <case-id> --repeat 3` says whether the agent or the judge is the one wavering.
 
 8. Review the flagged unknowns with your agent before shipping. Anything you can answer on the spot gets folded into the context as one more batch; the rest travels in the PR body for later.
 9. Open a PR. On a GitHub-synced project, Cassis posts the `cassis / ontology validation` check on it automatically; on GitLab or Bitbucket, a `cassis context check` job in your own pipeline is the equivalent gate. A human reviews, and merging to the default branch publishes the new version.
