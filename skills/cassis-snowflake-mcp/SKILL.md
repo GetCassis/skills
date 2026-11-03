@@ -1,6 +1,6 @@
 ---
 name: cassis-snowflake-mcp
-description: Use this skill to query data with Cassis (which grounds the question against the user's project context and returns SQL, a plan to approve, or a context gap to clarify) and Snowflake (which executes the SQL). Triggers when the user says "ask cassis", "query with cassis", "cassis question", or asks any natural-language data question while the Cassis MCP and a Snowflake MCP are both connected. Handles all three Cassis response paths: direct SQL, plan approval, and context-gap clarification.
+description: Use this skill to query data with Cassis (which grounds the question against the user's project context and returns SQL, a clarification question to answer, or a context gap it cannot fill) and Snowflake (which executes the SQL). Triggers when the user says "ask cassis", "query with cassis", "cassis question", or asks any natural-language data question while the Cassis MCP and a Snowflake MCP are both connected. Handles all three Cassis response paths: direct SQL, clarification questions, and context gaps.
 ---
 
 # Cassis + Snowflake MCP integration
@@ -40,30 +40,23 @@ Branch on `status`:
 
 Happy path. Run the SQL on Snowflake. Show the result (see Result display) and the generated SQL.
 
-### Path B. `status: not_answerable`, a definition requested in `answer`
+### Path B. `status: needs_input`, `clarification` present
 
-Cassis stopped on a concept that isn't in the context (`answer` and `error` carry the request for a definition). Frame the response so the user can see immediately that the next move is theirs:
+Cassis is missing essential business information (a definition, a scope, a time frame) and asks for it before writing SQL. `clarification.questions[]` lists the outstanding questions, each with an `id`, the `question` text, optional `options`, and `answer` once answered. `next_action` carries the exact `ask_question` calls that continue the chat, with `chat_id` and `clarification_id` filled in.
 
-1. A short header line: **"Cassis is asking you to clarify a concept in your question."**
-2. The `answer` text surfaced verbatim (it names the undefined concepts and asks you to define them).
-3. A one-line closing instruction: **"Reply with your definitions and I'll continue."**
+1. A short header line: **"Cassis needs one more detail before it writes the SQL."**
+2. Every unanswered question, verbatim, with its options when it has them.
+3. A one-line closing instruction: **"Reply and I'll continue."**
 
-Then wait. When the user replies, call `ask_question` again with the same `chat_id` and the clarification as the new `question`. This usually transitions to Path C.
+Then wait. Never invent a reply, pick a default silently, or hand-write SQL around the question. When the user answers (or you can answer from information they already gave, naming that source), call `ask_question` again with the same `chat_id`, the question's `id` as `clarification_id`, and the reply as `question`. Reply `unknown` to a question nobody can answer: Cassis then concludes with what the context supports. With several questions, collect all the answers first, then send one call per question. The last reply returns Path A or Path C.
 
-### Path C. `status: needs_execution`, plan present
+### Path C. `status: not_answerable`
 
-Render the plan in a readable format:
-
-- **Intent**: `plan.intent`
-- **Strategy**: `plan.strategy` as a numbered list
-- **Objects used**: `plan.objects_used`
-- **Assumptions**: `plan.assumptions`. Emphasize these. They're the defaults Cassis picked and the most likely place to spot a misread of the question.
-
-Ask for explicit approval. When the user approves, call `ask_question` again with the same `chat_id` and `execute_pending_plan: true`. The follow-up returns Path A; handle it the same way.
+Terminal for that question: either the context lacks an object the question needs (`answer` and `error` name the gap), or the question cannot run against the current context or data. Surface `answer` verbatim and stop. Retrying the same question won't help: the user can refine it, or their Cassis admins can fill the gap in the context.
 
 ### Path D. `status: error`
 
-Surface the error and stop. Do not retry silently. A `not_answerable` with nothing to define (a plan that cannot run against the current context or data) is handled the same way: retrying the same question won't help.
+Surface the error and stop. Do not retry silently.
 
 ## Snowflake execution rules
 
@@ -72,7 +65,7 @@ Surface the error and stop. Do not retry silently. A `not_answerable` with nothi
   - Preview note above the result: "Preview of 10 rows (of total M). Ask for the full CSV or a higher row cap if needed."
 - If Snowflake errors:
   - Surface the error text to the user clearly.
-  - Send the error back to Cassis to fix, in the same chat. Call `ask_question` again with the same `chat_id` and the error, for example: "The SQL you generated failed on Snowflake with this error: <error text>. Please correct it." Cassis re-grounds against the context and returns corrected SQL, a plan, or a context-gap clarification. Handle the response with Paths A to D as usual, and run the corrected SQL under the same approval and Auto-LIMIT rules.
+  - Send the error back to Cassis to fix, in the same chat. Call `ask_question` again with the same `chat_id` and the error, for example: "The SQL you generated failed on Snowflake with this error: <error text>. Please correct it." Cassis re-grounds against the context and returns corrected SQL, a clarification question, or a context gap. Handle the response with Paths A to D as usual, and run the corrected SQL under the same approval and Auto-LIMIT rules.
   - This is the durable path: Cassis owns the fix in-session, so a recurring error becomes a context enrichment rather than a one-off local patch.
   - Only the error text and the failing SQL go back to Cassis, never result rows or values (see Data protection). Errors are metadata: table and column names, types, syntax.
   - A local patch is a last resort, only if Cassis cannot resolve the error and the fix derives from a concrete signal (Snowflake "did you mean X?", a `describe_object` match, or an obvious casing or quoting issue). Keep it minimal (one column or one quote, never a restructure), show it alongside the original, prepend this warning verbatim, and get explicit approval before running it:
@@ -80,7 +73,7 @@ Surface the error and stop. Do not retry silently. A `not_answerable` with nothi
 
 ## Result display
 
-- Always show: the generated SQL, plan assumptions (if any), and the true row count (not just the preview size).
+- Always show: the generated SQL, the clarification answers it used (if any), and the true row count (not just the preview size).
 - Up to 20 rows: render as a markdown table inline.
 - More than 20 rows: show the first 10 rows + total count, and offer to save the full result set as CSV.
 - One-line summary above the table when the data is small and the shape is obvious (e.g. "5 traffic sources, total revenue from $X to $Y"). This is the only place the skill paraphrases the data, and it goes only to the user, never back to Cassis.
@@ -134,7 +127,7 @@ When the user says whether an answer was right or wrong, offer to send that to C
 Per question, the skill typically asks for 2 to 4 approvals:
 
 1. The initial `ask_question` call.
-2. If the plan path triggers: the `execute_pending_plan` call.
+2. If Cassis asks a clarification question: one `ask_question` reply per question.
 3. The Snowflake preview query.
 4. If a separate `COUNT(*)` is needed for the true total on a row-returning SELECT: a second Snowflake call. Avoid this when the user only wants the preview.
 

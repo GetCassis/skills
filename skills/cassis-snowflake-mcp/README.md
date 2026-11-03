@@ -6,7 +6,7 @@ MCP integration to use Cassis with Snowflake when Cassis isn't natively connecte
 
 The skill is a thin behavior guide. The heavy lifting splits between three pieces:
 
-- **Cassis MCP**: grounds your question against the project's context and responds with SQL, a plan with assumptions to approve, or a context gap to clarify.
+- **Cassis MCP**: grounds your question against the project's context and responds with SQL, a clarification question when essential business information is missing, or a context gap it cannot fill.
 - **Snowflake MCP**: executes the SQL. Read-only by default.
 - **`cassis-snowflake-mcp` skill**: wires the two together. Enforces approvals, handles auto-LIMIT, routes execution errors back to Cassis for in-session correction, and keeps Snowflake result values from leaking back into Cassis on follow-ups.
 
@@ -20,7 +20,7 @@ This is an MCP workflow, so it runs in any client that supports the Model Contex
 
 Reach for this workflow when your Cassis project is configured to **generate SQL only**, without a direct warehouse connection on Cassis's side.
 
-In that setup, Cassis grounds the question against your context and returns one of three things: SQL ready to execute, a plan with assumptions for you to approve, or a context gap that needs a definition before it can answer. It doesn't run the SQL itself. This skill plugs in the Snowflake MCP as the executor, so you get end-to-end plain-language access to your data without giving Cassis warehouse credentials.
+In that setup, Cassis grounds the question against your context and returns one of three things: SQL ready to execute, a clarification question when essential business information is missing, or a context gap it cannot fill. It doesn't run the SQL itself. This skill plugs in the Snowflake MCP as the executor, so you get end-to-end plain-language access to your data without giving Cassis warehouse credentials.
 
 If your Cassis project is connected directly to the warehouse (Cassis handles both generation and execution), you don't need this skill. Use Cassis on its own.
 
@@ -30,8 +30,8 @@ If your Cassis project is connected directly to the warehouse (Cassis handles bo
 2. Calls `ask_question` with the question, and with `project_id` unless the API key is scoped to one project.
 3. Branches on the response status:
    - **`answered` with SQL**: runs the SQL on Snowflake. Shows result, SQL, true row count.
-   - **`not_answerable`**: surfaces Cassis's request for a definition verbatim, waits for you to define the missing concept, then resends on the same `chat_id`.
-   - **`needs_execution` with plan**: renders intent, strategy, objects used, and assumptions. Assumptions get emphasized, because they're where misreads usually hide. Asks for approval before resending with `execute_pending_plan: true`.
+   - **`needs_input` with clarification questions**: shows each question verbatim with its choices, waits for your answers, then sends them back on the same `chat_id`. It never answers for you; `unknown` tells Cassis to conclude with what the context supports.
+   - **`not_answerable`**: the context lacks something the question needs, or the question cannot run against the current data. Surfaces the reason and stops.
    - **`error`**: surfaces and stops. No silent retries.
 4. Auto-LIMIT: for row-returning SELECTs without `LIMIT`, `GROUP BY`, or aggregates, the skill wraps the query with `LIMIT 10` for preview and runs a separate `COUNT(*)` for the true total. CSV save offered for the full result.
 5. Error recovery: if Snowflake rejects the SQL, the skill sends the error back to Cassis on the same `chat_id` and runs the corrected query, rather than hand-patching. Only the error text and the SQL go back, never result rows, so Cassis can fix the SQL in-session and flag a context gap to enrich. A minimal local patch is a last resort, only on a concrete signal and with explicit approval.
