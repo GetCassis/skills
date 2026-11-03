@@ -20,7 +20,7 @@ This is an MCP workflow, so it runs in any client that supports the Model Contex
 
 Reach for this workflow when your Cassis project is configured to **generate SQL only**, without a direct warehouse connection on Cassis's side.
 
-In that setup, Cassis grounds the question against your context and returns one of three things: SQL ready to execute, a plan with assumptions for you to approve, or a context gap that needs a definition before it can answer. It doesn't run the SQL itself. This skill plugs in the Snowflake MCP as the executor, so you get end-to-end plain-language access to your data without giving Cassis warehouse credentials.
+In that setup, Cassis grounds the question against your context and returns one of three things: SQL ready to execute, a clarification question when essential business information is missing, or a context gap it cannot fill. It doesn't run the SQL itself. This skill plugs in the Snowflake MCP as the executor, so you get end-to-end plain-language access to your data without giving Cassis warehouse credentials.
 
 If your Cassis project is connected directly to the warehouse (Cassis handles both generation and execution), you don't need this skill. Use Cassis on its own.
 

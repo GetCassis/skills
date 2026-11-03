@@ -73,7 +73,7 @@ Surface the error and stop. Do not retry silently.
 
 ## Result display
 
-- Always show: the generated SQL, plan assumptions (if any), and the true row count (not just the preview size).
+- Always show: the generated SQL, the clarification answers it used (if any), and the true row count (not just the preview size).
 - Up to 20 rows: render as a markdown table inline.
 - More than 20 rows: show the first 10 rows + total count, and offer to save the full result set as CSV.
 - One-line summary above the table when the data is small and the shape is obvious (e.g. "5 traffic sources, total revenue from $X to $Y"). This is the only place the skill paraphrases the data, and it goes only to the user, never back to Cassis.
