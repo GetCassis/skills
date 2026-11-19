@@ -1,6 +1,6 @@
 # Cassis skills
 
-Agent skills for working with [Cassis](https://getcassis.com), context maintenance for analytics agents. Keep governed context in Git, test changes with evals, review them through pull requests, and serve the approved version over MCP.
+Agent skills for working with [Cassis](https://getcassis.com), the data context layer that improves with use. Keep governed context in Git, test changes with evals, review them through pull requests, and serve the approved version over MCP.
 
 ## The skills
 
