@@ -1,0 +1,19 @@
+{
+  "name": "cassis",
+  "displayName": "Cassis",
+  "version": "1.1.0",
+  "description": "Agent skills for working with Cassis, the living context layer for analytics agents: extend and enrich your context in git, delivered as a pull request, and ask plain-language data questions with Cassis and Snowflake together.",
+  "author": {
+    "name": "Cassis",
+    "email": "hello@getcassis.com"
+  },
+  "homepage": "https://getcassis.com",
+  "repository": "https://github.com/GetCassis/skills",
+  "license": "MIT",
+  "keywords": ["ontology", "semantic-layer", "context-layer", "analytics-engineering", "dbt", "snowflake", "mcp", "analytics-agents"],
+  "logo": "assets/logo.png",
+  "skills": [
+    "./skills/cassis-ontology-authoring",
+    "./skills/cassis-snowflake-mcp"
+  ]
+}
