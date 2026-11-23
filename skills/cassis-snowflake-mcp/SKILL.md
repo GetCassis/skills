@@ -1,6 +1,6 @@
 ---
 name: cassis-snowflake-mcp
-description: Use this skill to query data with Cassis (which grounds the question against the user's project context and returns SQL, a clarification question to answer, or a context gap it cannot fill) and Snowflake (which executes the SQL). Triggers when the user says "ask cassis", "query with cassis", "cassis question", or asks any natural-language data question while the Cassis MCP and a Snowflake MCP are both connected. Handles all three Cassis response paths: direct SQL, clarification questions, and context gaps.
+description: 'Use this skill to query data with Cassis (which grounds the question against the user''s project context and returns SQL, a clarification question to answer, or a context gap it cannot fill) and Snowflake (which executes the SQL). Triggers when the user says "ask cassis", "query with cassis", "cassis question", or asks any natural-language data question while the Cassis MCP and a Snowflake MCP are both connected. Handles all three Cassis response paths: direct SQL, clarification questions, and context gaps.'
 ---
 
 # Cassis + Snowflake MCP integration
