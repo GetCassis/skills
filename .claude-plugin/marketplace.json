@@ -2,10 +2,10 @@
   "name": "cassis",
   "owner": {
     "name": "Cassis",
-    "email": "matthieu.blandineau@getcassis.com"
+    "email": "hello@getcassis.com"
   },
   "metadata": {
-    "description": "Agent skills for working with Cassis, the living context layer for analytics agents",
+    "description": "Agent skills for working with Cassis, the data context layer that improves with use",
     "version": "1.1.0"
   },
   "plugins": [
