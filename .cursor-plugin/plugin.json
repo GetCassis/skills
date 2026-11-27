@@ -1,0 +1,15 @@
+{
+  "name": "cassis",
+  "displayName": "Cassis",
+  "version": "1.0.0",
+  "description": "The data context layer that improves with use. Answer business questions from the metrics, definitions and business rules your data team approved, and maintain that context in Git.",
+  "author": {
+    "name": "Cassis",
+    "email": "support@getcassis.com"
+  },
+  "homepage": "https://getcassis.com",
+  "repository": "https://github.com/GetCassis/skills",
+  "license": "MIT",
+  "keywords": ["data", "analytics", "metrics", "semantic-layer", "context-layer", "mcp", "snowflake", "bigquery", "dbt"],
+  "logo": "assets/logo.png"
+}
