@@ -1,0 +1,17 @@
+{
+  "name": "cassis",
+  "owner": {
+    "name": "Cassis",
+    "email": "support@getcassis.com"
+  },
+  "metadata": {
+    "description": "Cassis, the data context layer that improves with use: MCP server and agent skills"
+  },
+  "plugins": [
+    {
+      "name": "cassis",
+      "description": "Answer business questions from the definitions your data team approved, and maintain that context in Git.",
+      "source": "./"
+    }
+  ]
+}

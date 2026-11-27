@@ -7,9 +7,12 @@ Agent skills for working with [Cassis](https://getcassis.com), the data context 
 | Skill | What it does |
 |---|---|
 | [`cassis-ontology-authoring`](skills/cassis-ontology-authoring/) | Extends an existing Cassis context in a git repository. Hand it a schema dump, dbt YAML, query history or an internal doc, and it writes the context files, validates them with `cassis-cli`, reviews the open questions with you, and opens the pull request. Comes with a [guide for humans](skills/cassis-ontology-authoring/README.md) carrying the same playbooks as copy-paste prompts, for agents that can't install skills. |
+| [`cassis-get-started`](skills/cassis-get-started/) | Answers business questions through the Cassis MCP: lists your projects, asks the question, shows the SQL and the definitions used, and waits for your answer when a definition is missing. |
 | [`cassis-snowflake-mcp`](skills/cassis-snowflake-mcp/) | Runs Cassis and a Snowflake MCP together when Cassis isn't natively connected to your warehouse. Cassis grounds the question against your context and returns SQL, Snowflake executes it. |
 
 ## Install
+
+In Cursor, install **Cassis** from the [Cursor Marketplace](https://cursor.com/marketplace). The plugin connects the Cassis MCP server (`https://app.getcassis.com/mcp/`) and adds the three skills. The first time a Cassis tool runs, Cursor opens your browser to sign in with your Cassis account. A free account includes Stallora, a sample marketplace project.
 
 In Claude Code, add the marketplace once, then install what you need:
 
